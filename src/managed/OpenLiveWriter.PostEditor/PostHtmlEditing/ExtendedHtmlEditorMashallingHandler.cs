@@ -25,6 +25,8 @@ using OpenLiveWriter.PostEditor.LiveClipboard;
 using OpenLiveWriter.PostEditor.PostHtmlEditing.Behaviors;
 using OpenLiveWriter.PostEditor.Tables;
 using OpenLiveWriter.PostEditor.Video;
+using OpenLiveWriter.PostEditor.ImageInsertion;
+using System.Drawing.Imaging;
 
 namespace OpenLiveWriter.PostEditor.PostHtmlEditing
 {
@@ -910,15 +912,31 @@ namespace OpenLiveWriter.PostEditor.PostHtmlEditing
 
             if (imageData.Bitmap != null)
             {
-                //save the Bitmap data as a PNG
-                savedImagePath = TempFileManager.Instance.CreateTempFile("image.png");
-                SaveBitmapToFile(imageData.Bitmap, savedImagePath);
+                //save the Bitmap data as a PNG or JPG according to user preferences
+                if (ImageInsertionSettings.EnablePasteAsJpg)
+                {
+                    savedImagePath = TempFileManager.Instance.CreateTempFile("image.jpg");                    
+                    SaveBitmapToFile(imageData.Bitmap, savedImagePath, true, ImageInsertionSettings.JPGQuality);
+                }
+                else
+                {
+                    savedImagePath = TempFileManager.Instance.CreateTempFile("image.png");
+                    SaveBitmapToFile(imageData.Bitmap, savedImagePath);
+                }
             }
             else if (imageData.Dib != null)
             {
-                //save the DIB data as a PNG
-                savedImagePath = TempFileManager.Instance.CreateTempFile("image.png");
-                SaveDibToFile(imageData.Dib, savedImagePath);
+                //save the Bitmap data as a PNG or JPG according to user preferences
+                if (ImageInsertionSettings.EnablePasteAsJpg)
+                {
+                    savedImagePath = TempFileManager.Instance.CreateTempFile("image.jpg");
+                    SaveDibToFile(imageData.Dib, savedImagePath, ImageInsertionSettings.JPGQuality);
+                }
+                else
+                {
+                    savedImagePath = TempFileManager.Instance.CreateTempFile("image.png");
+                    SaveDibToFile(imageData.Dib, savedImagePath);
+                }
             }
             else if (imageData.GIF != null)
             {
@@ -932,13 +950,38 @@ namespace OpenLiveWriter.PostEditor.PostHtmlEditing
         }
 
         /// <summary>
-        /// Saves a Bitmap as a PNG.
+        /// Saves a Bitmap as a PNG or JPG.
         /// </summary>
         /// <param name="bitmap"></param>
         /// <param name="filepath"></param>
-        private void SaveBitmapToFile(Bitmap bitmap, string filepath)
+        private void SaveBitmapToFile(Bitmap bitmap, string filepath, bool jpgformat = false, long jpgquality = 93L)
         {
-            bitmap.Save(filepath);
+            if (jpgformat)
+            {
+                ImageCodecInfo jpegCodecInfo = GetEncoderInfo("image/jpeg");
+                Encoder qualityEncoder = Encoder.Quality;
+                EncoderParameters encoderParams = new EncoderParameters(1);
+                EncoderParameter qualityEncoderParam = new EncoderParameter(qualityEncoder, jpgquality);
+                encoderParams.Param[0] = qualityEncoderParam;
+                bitmap.Save(filepath, jpegCodecInfo, encoderParams);
+            }
+            else
+            {
+                bitmap.Save(filepath);
+            }
+        }
+
+        ImageCodecInfo GetEncoderInfo(String mimeType)
+        {
+            int j;
+            ImageCodecInfo[] encoders;
+            encoders = ImageCodecInfo.GetImageEncoders();
+            for (j = 0; j < encoders.Length; ++j)
+            {
+                if (encoders[j].MimeType.ToUpper(CultureInfo.InvariantCulture) == mimeType.ToUpper(CultureInfo.InvariantCulture))
+                    return encoders[j];
+            }
+            return null;
         }
 
         /// <summary>
@@ -946,9 +989,9 @@ namespace OpenLiveWriter.PostEditor.PostHtmlEditing
         /// </summary>
         /// <param name="dib"></param>
         /// <param name="filepath"></param>
-        private void SaveDibToFile(Stream dib, string filepath)
+        private void SaveDibToFile(Stream dib, string filepath, int jpgquality = 93)
         {
-            DIBHelper.DibToFile(dib, filepath);
+            DIBHelper.DibToFile(dib, filepath, jpgquality);
         }
 
         /// <summary>

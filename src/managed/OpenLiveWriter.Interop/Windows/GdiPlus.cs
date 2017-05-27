@@ -23,6 +23,23 @@ namespace OpenLiveWriter.Interop.Windows
                                                         IntPtr encparams);
 
         [DllImport("gdiplus.dll", CharSet = CharSet.Auto)]
-        public static extern int GdipDisposeImage(IntPtr image);
+        public static extern int GdipDisposeImage(IntPtr image);        
+    }
+
+    // Structures for saving JPEG with compression support using GdipSaveImageToFile encparams
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct gdipEncoderParameter
+    {
+        public Guid GUID;
+        public int NumberOfValues;
+        public System.Drawing.Imaging.EncoderParameterValueType type;
+        public IntPtr value;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct gdipEncoderParameters
+    {
+        public int count;
+        public gdipEncoderParameter Parameter;
     }
 }

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using OpenLiveWriter.Interop.Windows;
+using OpenLiveWriter.CoreServices.Settings;
 
 namespace OpenLiveWriter.CoreServices
 {
@@ -15,8 +16,11 @@ namespace OpenLiveWriter.CoreServices
     /// </summary>
     public class DIBHelper
     {
+        [DllImport("ole32.dll", CharSet = CharSet.Auto)]
+        public static extern int CLSIDFromString(string lpszProgID,
+                                                 out Guid clsid);
 
-        public static void DibToFile(Stream stream, string filePath)
+        public static void DibToFile(Stream stream, string filePath, int jpgquality = 93)
         {
             // Read the DIB into a Byte array and pin it
             // This is necessary because some of the unmanaged calls
@@ -56,10 +60,38 @@ namespace OpenLiveWriter.CoreServices
 
                     // Write the bitmap to a file of the specified type
                     Guid clsid = GetCodecClsid(filePath);
-                    st = GdiPlus.GdipSaveImageToFile(img, filePath, ref clsid, IntPtr.Zero);
-                    if (st != 0)
-                    {
-                        throw new DIBHelperException("Couldn't write Dib to File");
+                    Guid imagejpeg = GetCodecClsid("image.jpg"); 
+                    if (imagejpeg == clsid)
+                    {                        
+                        var arr = new gdipEncoderParameters[1];
+                        unsafe
+                        {
+                            fixed (gdipEncoderParameters* ptr = arr)
+                            {
+                                String EncoderQuality = "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}";
+                                long quality = jpgquality; // ImageHelper2 also sets JPEG_QUALITY
+
+                                ptr->count = 1;
+                                ptr->Parameter.NumberOfValues = 1;
+                                ptr->Parameter.type = EncoderParameterValueType.ValueTypeLong;
+                                CLSIDFromString(EncoderQuality, out ptr->Parameter.GUID);
+                                long* p = &quality;
+                                ptr->Parameter.value = (IntPtr)p;
+                                IntPtr adr = (IntPtr)ptr;
+                                st = GdiPlus.GdipSaveImageToFile(img, filePath, ref clsid, adr);
+                                if (st != 0)
+                                {
+                                    throw new DIBHelperException("Couldn't write Dib to File");
+                                }
+                            }
+                        }                        
+                    }
+                    else {
+                        st = GdiPlus.GdipSaveImageToFile(img, filePath, ref clsid, IntPtr.Zero);
+                        if (st != 0)
+                        {
+                            throw new DIBHelperException("Couldn't write Dib to File");
+                        }
                     }
                 }
                 finally
