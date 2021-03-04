@@ -410,6 +410,8 @@
     <Compile Include="IBlogPostEditor.cs" />
     <Compile Include="IBlogPostPublishingContext.cs" />
     <Compile Include="IBlogSettingsEditor.cs" />
+    <Compile Include="ImageInsertion\ImageInsertionPreferences.cs" />
+    <Compile Include="ImageInsertion\ImageInsertionSettings.cs" />
     <Compile Include="ImageInsertion\InsertImageDialog.cs" />
     <Compile Include="ImageInsertion\InsertImageSource.cs" />
     <Compile Include="ImageInsertion\InsertImageTabControl.cs">
